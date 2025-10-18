@@ -4,8 +4,8 @@ Implements the full workflow for verifying if a detected object matches the item
 
 What it does:
 Capture a frame from the camera (infra.camera_adapter).
-Run YOLO detection (infra.detector_yolo).
-Compare detected labels with the item expected in MIMS (infra.validator).
+Run YOLO detection (infra.yolo_detector).
+Compare detected labels with the item expected in MIMS (infra.validate).
 Return a structured result (domain.models.ValidationResult).
 Optionally log this validation event (infra.storage).
 

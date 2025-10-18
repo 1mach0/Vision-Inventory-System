@@ -5,7 +5,7 @@ Automate serial number / batch / expiry extraction from item labels.
 What it does:
 Capture image of item or label.
 Preprocess (crop or zoom into label region).
-Run OCR (infra.ocr_engine).
+Run OCR (infra.ocr).
 Return parsed text fields (domain.models.OCRResult).
 Optionally log extracted info to the database.
 
