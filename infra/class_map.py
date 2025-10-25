@@ -14,3 +14,11 @@ Optional: load from a YAML file for easy updates.
 Used by:
 yolo_detector.py.
 """
+
+CLASS_MAP = {
+    0: "Weapon-M4",
+    1: "Medical-Kit",
+    2: "Crate-Ammo"
+}
+
+
