@@ -10,5 +10,5 @@ Return parsed text fields (domain.models.OCRResult).
 Optionally log extracted info to the database.
 
 Used by:
-CV_Module.scan_label(); called during stock entry/update when the user scans a physical item.
+CV_Module.scan_label(); called during stock entry/update when the user scans a physical item..
 """
