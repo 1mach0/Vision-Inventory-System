@@ -16,9 +16,9 @@ yolo_detector.py.
 """
 
 CLASS_MAP = {
-    0: "Weapon-M4",
-    1: "Medical-Kit",
-    2: "Crate-Ammo"
+    0: "Label-0",
+    1: "Label-1",
+    2: "Label-2"
 }
 
 
