@@ -3,7 +3,7 @@ Purpose:
 Lightweight local face verification for operator authentication.
 
 What it does:
-Uses InsightFace or similar model to generate embeddings.
+Uses DeepFace to generate embeddings.
 Compares against saved embeddings in storage.py.
 Returns True/False or match confidence.
 
@@ -14,50 +14,36 @@ verify_operator.py.
 import numpy as np
 from storage import load_faces
 from typing import Tuple
-from insightface.app import FaceAnalysis
+from deepface import DeepFace
 
+model_name = "VGG-Face"
+detector_backend = "opencv"
 
-## Ideally should be stored in config.py
-THRESHOLD = 0.6         ## Verification threshold
-NMS_THRESHOLD = 0.4     ## Non-Maximum Suppression threshold for face detection
+confidence_threshold = 0.7
 
+def get_embedding(frame_path) -> np.ndarray:
+    result = DeepFace.represent(img_path=frame_path, model_name=model_name, detector_backend=detector_backend, max_faces=1)
+    embedding = result[0]["embedding"]
+    return embedding
 
-app = FaceAnalysis(name='antelopev2')    ## lightweight face detection + embedding model
-app.prepare(ctx_id=0, nms=NMS_THRESHOLD) 
+def cosine_similarity(current_embedding, existing_embedding) -> float:
+    dot_prod = np.dot(current_embedding, existing_embedding)
+    norm_prod = np.linalg.norm(current_embedding) * np.linalg.norm(existing_embedding)
+    return dot_prod / norm_prod
 
-def get_embedding(frame) -> np.ndarray:
-    """
-        Input: Takes a frame
-        Output: Returns the embedding of the first face detected (Can be extended to all of them)
-    """
-    faces = app.get(frame)
-    if not faces:
-        return None
-    return faces[0].embedding
-
-def cosing_similarity(current_embedding, existing_embedding):
-    return np.dot(current_embedding, existing_embedding) / (np.linalg.norm(current_embedding) * np.linalg.norm(existing_embedding))
-
-def verify_face(frame) -> Tuple[bool, str, float]:
-    """
-        Compares detected face against stored embeddings.
-        Returns: (is_verified, matched_name, confidence)
-    """
-
-    embedding = get_embedding(frame)
-    if embedding is None:
-        return False, None, 0.0
-    
+def verify_face(frame_path) -> Tuple[bool, str, float]:
+    curr_embedding = get_embedding(frame_path)
     all_faces = load_faces()
-    max_conf = 0.0
-    matched_name = None
 
-    for name, face_embedding in all_faces.items():
-        face_embedding = np.array(face_embedding) 
-        conf = cosing_similarity(current_embedding=embedding, existing_embedding=face_embedding)
+    best_confidence = 0.0
+    matched_name = ""
 
-        if conf > max_conf:
-            max_conf = conf
+    for name, check_face_embedding in all_faces.items():
+        check_embedding = np.array(check_face_embedding)
+        confidence = cosine_similarity(curr_embedding, check_embedding)
+
+        if confidence > best_confidence:
+            best_confidence = confidence
             matched_name = name
-        
-    return (max_conf >= THRESHOLD, matched_name, max_conf)
+
+    return best_confidence >= confidence_threshold, matched_name, best_confidence
