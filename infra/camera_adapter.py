@@ -11,7 +11,6 @@ Used by:
 All app use-cases needing live images (validation, label scanning, face verification).
 """
 
-import numpy as np
 import cv2 as cv
 
 class CameraAdapter:
