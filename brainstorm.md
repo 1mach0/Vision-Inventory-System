@@ -4,17 +4,19 @@ infra.camera_adapter, infra.yolo_detector, infra.validate -> validate_transactio
 
 infra.camera_adapter.py, infra.auth_face, infra.storage -> verify_operator.py -> True / False
 
-models.py
+[done] models.py
 
 infra.camera_adapter -> cv_window.py -> logging.py + storage.py
 
 widgets.py
 
-auth_face.py
+[done] models.py
 
-camera_adapter.py
+[done] auth_face.py
 
-class_map.py
+[done] camera_adapter.py
+
+[done] class_map.py
 
 config.py
 
@@ -26,7 +28,7 @@ storage.py
 
 validate.py
 
-yolo_detector.py
+[done] yolo_detector.py
 
 init infra modules -> cv_module.py
 
