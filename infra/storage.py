@@ -13,7 +13,6 @@ Used by:
 All app modules that need persistence.
 """
 
-# Using JSON for simplicity
 import json
 from typing import Dict, List
 from pathlib import Path
@@ -26,7 +25,7 @@ BASE_PATH.mkdir(exist_ok=True)
 def load_faces() -> Dict[str, List[float]]:
     if FACES_FILE.exists():
         with open(FACES_FILE, "r") as f:
-            return json.loads(f)
+            return json.load(f)
         
     return {}
 
