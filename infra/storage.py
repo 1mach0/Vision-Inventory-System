@@ -16,8 +16,9 @@ All app modules that need persistence.
 import json
 from typing import Dict, List
 from pathlib import Path
+from config import config
 
-BASE_PATH = Path("./data") # this can be changed
+BASE_PATH = Path(config.storage.database_path) # this can be changed
 FACES_FILE = BASE_PATH / "faces.json"
 DETECTIONS_FILE = BASE_PATH / "detections.json"
 BASE_PATH.mkdir(exist_ok=True)
