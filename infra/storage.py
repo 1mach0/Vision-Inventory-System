@@ -13,13 +13,12 @@ Used by:
 All app modules that need persistence.
 """
 
-#### Im gonna be using JSON for simplicity
-
+# Using JSON for simplicity
 import json
 from typing import Dict, List
 from pathlib import Path
 
-BASE_PATH = Path("./data") ### this can be changed
+BASE_PATH = Path("./data") # this can be changed
 FACES_FILE = BASE_PATH / "faces.json"
 DETECTIONS_FILE = BASE_PATH / "detections.json"
 BASE_PATH.mkdir(exist_ok=True)
