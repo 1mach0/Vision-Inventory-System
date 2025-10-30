@@ -12,11 +12,11 @@ yolo_detector.py, validate.py, ocr.py.
 """
 import yaml
 from dataclasses import dataclass
-from typing import Optional
 
 @dataclass
 class CameraConfig:
     index: int
+    fps: int = 60
 
 @dataclass
 class StorageConfig:
@@ -34,8 +34,10 @@ class YoloDetectorConfig:
     confidence_threshold: float
 
 @dataclass
-class OcrConfig:
-    language: str
+class OCRSystemConfig:
+    engine: str
+    min_confidence: float
+    language: str = "eng"
 
 @dataclass
 class AppConfig:
@@ -44,7 +46,7 @@ class AppConfig:
     storage: StorageConfig
     auth_face: AuthFaceConfig
     yolo_detector: YoloDetectorConfig
-    ocr: OcrConfig
+    ocr: OCRSystemConfig
 
 def load_config(config_path: str = "config.yaml") -> AppConfig:
     """
@@ -58,7 +60,7 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
         storage=StorageConfig(**config_data['storage']),
         auth_face=AuthFaceConfig(**config_data['auth_face']),
         yolo_detector=YoloDetectorConfig(**config_data['yolo_detector']),
-        ocr=OcrConfig(**config_data['ocr'])
+        ocr=OCRSystemConfig(**config_data['ocr'])
     )
 
 config = load_config()
