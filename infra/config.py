@@ -49,9 +49,6 @@ class AppConfig:
     ocr: OCRSystemConfig
 
 def load_config(config_path: str = "config.yaml") -> AppConfig:
-    """
-    Loads the YAML configuration file and parses it into the AppConfig dataclass.
-    """
     with open(config_path, 'r') as f:
         config_data = yaml.safe_load(f)
     
