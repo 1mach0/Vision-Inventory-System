@@ -16,7 +16,7 @@ Every layer. Infra returns them, app manipulates them, frontend displays them.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict
 import numpy as np
 
 
@@ -35,6 +35,7 @@ class OCRResult:
     confidence: float
     bbox: tuple[float, float, float, float]
     source_id: Optional[int]=None
+    fields: Optional[Dict[str, str]] = None
 
 @dataclass
 class ValidationResult:
@@ -43,7 +44,6 @@ class ValidationResult:
     timestamp: float
     operator_id: Optional[int]=None
     related_items: Optional[list[str]]=None
-
 
 @dataclass
 class Operator:
