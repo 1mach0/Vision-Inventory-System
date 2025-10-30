@@ -1,3 +1,4 @@
+pytesseract
 deepface
 ultralytics
 numpy~=2.2.6

@@ -10,56 +10,117 @@ May include regex parsing for known label formats.
 Used by:
 scan_labels.py.
 """
-import numpy as np
-import pytesseract
+
+import pytesseract as pytes
 import cv2
-import regex as re
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, List
+import re
 
-try:
-    from .config import CONFIG, OCRConfig
-    OCR_CONFIG = CONFIG.ocr
-    print("Successfully loaded OCR config from config.py")
-except ImportError:
-    print("config.py or CONFIG.ocr not found")
+from domain.models import OCRResult
+from infra.config import config
+from infra.logger import get_logger
 
-@dataclass
-class OCRResult:
-    raw_text: str
-    confidence: Optional[float] = None
-    parsed_fields: Dict[str, str] = field(default_factory=dict)
 
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Use adaptive thresholding to enhance text
-    processed = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-    return processed
+logger = get_logger(__name__)
 
-def ocr_on_image(image_path):
-    proccessed_img = preprocess_image(image_path)
-    custom_config = f'-l {OCR_CONFIG.language} --oem 3 --psm 6' #Assume a single uniform block of text.
-    data = pytesseract.image_to_data(proccessed_img, output_type=pytesseract.Output.DICT, config=custom_config)
-    texts = []
-    confidences = []
-    for i, word in enumerate(data['text']):
-        if float(data['conf'][i]) > 50 and word.strip():
-            texts.append(word)
-            confidences.append(float(data['conf'][i]))
-    full_text = ' '.join(texts)
-    avg_conf = sum(confidences) / len(confidences) if confidences else 0
-    parsed = {}
-    for key, pattern in OCR_CONFIG.regex_patterns.items():
-        match = re.search(pattern, full_text, re.IGNORECASE)
-        if match:
-            if match.groups() :
-                extracted_text = match.group(1).strip() 
-            else : 
-                extracted_text = match.group(0).strip()
-            # The key is the name from the config (like 'serial' for example) and the value is the extracted_text.
-            parsed[key] = extracted_text
-                
-    return OCRResult(raw_text=full_text, confidence=avg_confidence, parsed_fields=parsed)   
+def preprocess_image(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (3,3), 0)
+    threshold = cv2.adaptiveThreshold(
+        src=blur, # input grayscale image after smoothing
+        maxValue=255, # white
+        adaptiveMethod=cv2.ADAPTIVE_THRESH_GAUSSIAN_C, # gaussian weighted sum of neighbouring pixel vals
+        thresholdType=cv2.THRESH_BINARY, # pixels above become white, pixels become black
+        blockSize=31, # size of neighbourhood
+        C=2 # constant subtracter from the mean
+    )
+
+    return threshold
+
+def parse_fields(text: str) -> Dict[str, str]:
+    fields = {}
+
+    batch_match = re.search(r"Batch\s*(?:No\.?|Number)?[:\-]?\s*([A-Z0-9]+)", text, re.IGNORECASE)
+    exp_match = re.search(r"Exp(?:iry|\.|Date)?[:\-]?\s*([0-9/.-]{4,10})", text, re.IGNORECASE)
+    serial_match = re.search(r"Serial\s*(?:No\.?)?[:\-]?\s*([A-Z0-9]+)", text, re.IGNORECASE)
+
+    if batch_match:
+        fields["batch"] = batch_match.group(1)
+    if exp_match:
+        fields["expiry"] = exp_match.group(1)
+    if serial_match:
+        fields["serial"] = serial_match.group(1)
+
+    return fields
+
+def extract_with_tesseract(image, lang="eng", source_id: Optional[int] = None) -> List[OCRResult]:
+    preprocessed = preprocess_image(image)
+
+    config_str = f"--psm 6 -l {lang} -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/.-"
+    data = pytes.image_to_data(
+        preprocessed,
+        config=config_str,
+        output_type=pytes.Output.DICT
+    )
+
+    results: List[OCRResult] = []
+
+    for i in range(len(data["text"])):
+        text = data["text"][i].strip()
+        if not text:
+            continue
+
+        try:
+            conf = float(data["conf"][i])
+        except ValueError:
+            conf = 0.0
+
+        if conf < config.ocr.min_confidence:
+            continue
+
+        x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
+        bbox = (x, y, x + w, y + h)
+
+        parsed = parse_fields(text)
+
+        result = OCRResult(
+            text = text,
+            confidence = conf,
+            bbox = bbox,
+            source_id = source_id,
+            fields = parsed if parsed else None
+        )
+
+        results.append(result)
+
+    logger.info(f"Tesseract OCR extracted {len(results)} text segments.")
+
+    return results
+
+
+# public functions
+
+def extract_text(image, engine: Optional[str] = None) -> List[OCRResult]:
+    if image is None:
+        raise ValueError("No image provided for OCR extraction.")
+
+    engine = engine or config.ocr.engine
+    min_conf = config.ocr.min_confidence
+    lang = config.ocr.language
+
+    logger.info(f"OCR engine: {engine}, min_conf={min_conf}, lang={lang}")
+
+    if engine == "tesseract":
+        results = extract_with_tesseract(image, lang=lang)
+    # elif engine == "paddle":
+    #     results = extract_with_paddle(image, lang=lang)
+    # elif engine == "easyocr":
+    #     results = extract_with_easyocr(image, lang=lang)
+    else:
+        raise ValueError(f"Unknown OCR engine: {engine}")
+
+    filtered = [r for r in results if r.confidence >= min_conf]
+    logger.info(f"{len(filtered)} OCR results passed the confidence threshold ({min_conf})")
+
+    return filtered
 
