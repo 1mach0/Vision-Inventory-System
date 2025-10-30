@@ -20,7 +20,6 @@ from domain.models import OCRResult
 from infra.config import config
 from infra.logger import get_logger
 
-
 logger = get_logger(__name__)
 
 def preprocess_image(image):
