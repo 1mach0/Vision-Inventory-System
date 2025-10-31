@@ -15,11 +15,12 @@ import numpy as np
 from storage import load_faces
 from typing import Tuple
 from deepface import DeepFace
+from config import config
 
-model_name = "VGG-Face"
+model_name = config.auth_face.model_name
 detector_backend = "opencv"
 
-confidence_threshold = 0.7
+confidence_threshold = config.auth_face.verification_threshold
 
 def get_embedding(frame_path) -> np.ndarray:
     result = DeepFace.represent(img_path=frame_path, model_name=model_name, detector_backend=detector_backend, max_faces=1)

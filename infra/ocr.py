@@ -16,7 +16,7 @@ import cv2
 from typing import Optional, Dict, List
 import re
 
-from domain.models import OCRResult
+from ..domain.models import OCRResult
 from infra.config import config
 from infra.logger import get_logger
 

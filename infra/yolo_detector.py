@@ -17,14 +17,16 @@ from class_map import CLASS_MAP
 from pathlib import Path
 from typing import Optional
 import time
+from config import config
 
 class YOLODetector:
-    def __init__(self, weights_path: str = Path(__file__).resolve().parent.parent / "models" / "yolov8.pt"):
-        self.weights_path = Path(weights_path)
+    def __init__(self, weights_path: str = None):
+        self.weights_path = Path(weights_path or config.yolo_detector.model_path)
         if not self.weights_path.exists():
             raise FileNotFoundError(f"YOLO weights not found at {self.weights_path}")
         
         self.yolo_model = YOLO(str(self.weights_path))
+        self.conf_threshold = config.yolo_detector.confidence_threshold
 
     def detect(self, frame, frame_id: Optional[int] = None):
         results = self.yolo_model(frame)
@@ -38,16 +40,17 @@ class YOLODetector:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 class_id = int(box.cls[0])
                 confidence = float(box.conf[0])
-                detections.append(
-                    Detection(
-                        id=class_id,
-                        label=CLASS_MAP.get(class_id, f"Class-{class_id}"),
-                        confidence=confidence,
-                        bbox=(x1, y1, x2, y2),
-                        timestamp=timestamp,
-                        frame_id=frame_id
+                if confidence >= self.conf_threshold:
+                    detections.append(
+                        Detection(
+                            id=class_id,
+                            label=CLASS_MAP.get(class_id, f"Class-{class_id}"),
+                            confidence=confidence,
+                            bbox=(x1, y1, x2, y2),
+                            timestamp=timestamp,
+                            frame_id=frame_id
+                        )
                     )
-                )
 
         return detections
 
